@@ -1,0 +1,5 @@
+{
+  "name": "Sharaf AI Auth Portal",
+  "description": "A sophisticated authentication portal for the Sharaf AI platform, featuring Login and Signup views with RTL support and modern dark theme UI.",
+  "requestFramePermissions": []
+}
