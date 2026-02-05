@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { User, Mail, Lock, Eye, EyeOff, GraduationCap, Heart } from 'lucide-react';
 import { AccountType } from '../types';
+import { AuthService } from '@/api/services/auth.service';
 
 interface SignupFormProps {
   onSwitchToLogin: () => void;
@@ -10,18 +11,52 @@ interface SignupFormProps {
 const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [selectedType, setSelectedType] = useState<AccountType>(AccountType.TRAINEE);
-  
+
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     password: '',
     confirmPassword: ''
   });
+  //جديد 
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Registering:', { ...formData, accountType: selectedType });
-    // Backend API call to Laravel would go here
+    //جديد
+    setLoading(true);
+    setError(null);
+    if (formData.password !== formData.confirmPassword) {
+      setError('كلمة المرور غير متطابقة ');
+      setLoading(false);
+      return;
+    }
+    try {
+      const payload = {
+        full_name: formData.fullName,
+        email: formData.email,
+        password: formData.password,
+        password_confirmation: formData.confirmPassword,
+        role_id: selectedType === AccountType.TRAINEE ? 3 : 4
+      };
+      const res = await AuthService.signup(payload);
+      console.log('Signup response', res);
+
+      setShowSuccess(true);
+      setTimeout(() => {
+        //هون لازم توجهو لل login لان مافي token بعد تسجيل المستخدم الجديد
+        //  navigate('/login');
+
+      }, 1500);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'حدث خطأ أثناء إنشاء الحساب.');
+    } finally {
+      setLoading(false);
+
+    }
+
   };
 
   return (
@@ -32,6 +67,26 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Success Dialog */}
+        {showSuccess && (
+          <div
+            className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
+            onClick={() => setShowSuccess(false)}
+          >
+            <div
+              className="bg-[#1c2533] p-6 rounded-xl shadow-lg text-white w-80 text-center animate-in scale-in duration-300"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-bold mb-2">تم إنشاء الحساب بنجاح!</h3>
+              <p className="text-gray-400">سيتم تحويلك إلى لوحة التحكم...</p>
+            </div>
+          </div>
+        )}
+        {error && (
+          <div className="bg-red-600/30 text-red-700 p-3 rounded-lg text-sm text-center mb-3 animate-in fade-in duration-300">
+            {error}
+          </div>
+        )}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             الاسم الكامل <span className="text-red-500">*</span>
@@ -108,11 +163,10 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
             <button
               type="button"
               onClick={() => setSelectedType(AccountType.TRAINEE)}
-              className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all gap-2 ${
-                selectedType === AccountType.TRAINEE
+              className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all gap-2 ${selectedType === AccountType.TRAINEE
                   ? 'border-blue-600 bg-blue-600/10 text-white'
                   : 'border-gray-800 bg-[#1c2533] text-gray-400 hover:border-gray-600'
-              }`}
+                }`}
             >
               <GraduationCap size={24} />
               <span className="font-medium">متدرب</span>
@@ -122,11 +176,10 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
             <button
               type="button"
               onClick={() => setSelectedType(AccountType.VOLUNTEER)}
-              className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all gap-2 ${
-                selectedType === AccountType.VOLUNTEER
+              className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all gap-2 ${selectedType === AccountType.VOLUNTEER
                   ? 'border-blue-600 bg-blue-600/10 text-white'
                   : 'border-gray-800 bg-[#1c2533] text-gray-400 hover:border-gray-600'
-              }`}
+                }`}
             >
               <Heart size={24} />
               <span className="font-medium">متطوع</span>
@@ -135,7 +188,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
         </div>
 
         <div className="bg-black/20 p-3 rounded-lg text-xs text-gray-400 text-center">
-          {selectedType === AccountType.TRAINEE 
+          {selectedType === AccountType.TRAINEE
             ? 'سيكون لديك صلاحية الوصول إلى الدورات والمهام التعليمية.'
             : 'سيكون لديك صلاحية المساهمة في المشاريع ودعم المتدربين.'}
         </div>
@@ -143,8 +196,9 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
         <button
           type="submit"
           className="w-full bg-blue-700 hover:bg-blue-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-blue-900/20"
+          disabled={loading}
         >
-          إنشاء الحساب
+          {loading ? 'جاري إنشاء الحساب...' : 'إنشاء الحساب'}
         </button>
       </form>
 

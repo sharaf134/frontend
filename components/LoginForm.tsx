@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { AuthService } from '@/api/services/auth.service';
 
 interface LoginFormProps {
   onSwitchToSignup: () => void;
@@ -10,11 +11,33 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  // جديد
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Logging in with:', { email, password });
-    // Backend API call to Laravel would go here
+    //جديد
+    setLoading(true);
+    setError(null);
+    try {
+      const data = { email, password };
+      const res = await AuthService.login(data);
+      console.log('login response:', res);
+      localStorage.setItem('token', res.token);
+      setShowSuccess(true);
+       setTimeout(() => {
+        //هون بتحط nvaigation الخاص فيك
+      // navigate('/dashboard');
+    }, 1500);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة اخرى')
+    } finally {
+      setLoading(false);
+    }
+
+
   };
 
   return (
@@ -23,8 +46,20 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup }) => {
         <h1 className="text-4xl font-bold text-white mb-2">تسجيل الدخول</h1>
         <p className="text-gray-400">مرحباً بك في منصة Sharaf AI المتطورة</p>
       </div>
-
+        {/* جديد */}
       <form onSubmit={handleSubmit} className="space-y-6">
+       {/* جديد */}
+       {showSuccess && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50" onClick = {()=>setShowSuccess(false)}>
+
+          <div className="bg-[#1c2533] p-6 rounded-xl shadow-lg text-white w-80 text-center animate-in scale-in duration-300">
+            <h3 className="text-lg font-bold mb-2">تم تسجيل الدخول بنجاح!</h3>
+            <p className="text-gray-400">سيتم تحويلك إلى لوحة التحكم...</p>
+          </div>
+        </div>
+      )}
+    
+        {error && <p className="text-red-500 text-sm">{error}</p>}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             البريد الإلكتروني <span className="text-red-500">*</span>
@@ -79,10 +114,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup }) => {
         <button
           type="submit"
           className="w-full bg-blue-700 hover:bg-blue-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-blue-900/20"
+          disabled={loading}
         >
-          تسجيل الدخول
+          {loading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
+
         </button>
       </form>
+     
 
       <div className="mt-8 text-center text-gray-400">
         لا تملك حساباً بعد؟{' '}
