@@ -46,7 +46,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
 
       setShowSuccess(true);
       setTimeout(() => {
-        //هون لازم توجهو لل login لان مافي token بعد تسجيل المستخدم الجد
+        //هون لازم توجهو لل login لان مافي token بعد تسجيل المستخدم الجديد
         //  navigate('/login');
 
       }, 1500);
